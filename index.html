@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EliteStocks Typer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0a;
+    --panel: #131313;
+    --panel-2: #161616;
+    --border: #1f1f1f;
+    --amber: #f5a623;
+    --amber-dim: #f5a62333;
+    --white: #f5f5f5;
+    --gray: #6b6b6b;
+    --gray-light: #9a9a9a;
+    --error: #e5484d;
+    --ok: #3fb950;
+    --radius: 16px;
+  }
+
+  *{
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+  }
+  input, textarea{ user-select: text; -webkit-user-select: text; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Inter', -apple-system, sans-serif;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  body{
+    background-image:
+      radial-gradient(ellipse 800px 500px at 50% -10%, rgba(245,166,35,0.08), transparent 60%),
+      radial-gradient(ellipse 600px 400px at 90% 100%, rgba(245,166,35,0.04), transparent 60%);
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  ::selection{ background: var(--amber-dim); }
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 22px 40px;
+    border-bottom: 1px solid var(--border);
+    opacity:0;
+    animation: fadeDown .6s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  .logo{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; letter-spacing:-0.02em; }
+  .logo-dot{
+    width:9px;height:9px;border-radius:50%; background: var(--amber);
+    box-shadow: 0 0 12px var(--amber);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .logo span.accent{ color: var(--amber); }
+
+  .pill-group{ display:flex; background: var(--panel); border:1px solid var(--border); border-radius: 999px; padding: 4px; gap:2px; }
+  .pill-btn{
+    border:none; background:transparent; color: var(--gray-light);
+    font-family:inherit; font-size:13px; font-weight:600;
+    padding:7px 16px; border-radius:999px; cursor:pointer; white-space:nowrap;
+    transition: color .3s ease, background .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
+  }
+  .pill-btn.active{ background: var(--amber); color:#000; box-shadow: 0 2px 14px var(--amber-dim); }
+  .pill-btn:not(.active):hover{ color: var(--white); }
+
+  /* ---------- MAIN ---------- */
+  main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 36px 22px; }
+  .stage{ width:100%; max-width: 920px; display:flex; flex-direction:column; align-items:center; gap: 22px; }
+
+  /* source selector row */
+  .controls{
+    display:flex; flex-direction:column; align-items:center; gap:16px; width:100%;
+    opacity:0; transform: translateY(-6px);
+    animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .05s forwards;
+  }
+  .controls-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+
+  .source-panel{
+    width:100%; max-width: 620px;
+    overflow:hidden;
+    max-height:0;
+    opacity:0;
+    transition: max-height .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, margin .45s ease;
+  }
+  .source-panel.open{ max-height: 220px; opacity:1; }
+  .source-inner{
+    background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; display:flex; flex-direction:column; gap:10px;
+  }
+  .source-inner textarea, .source-inner input[type=text]{
+    width:100%; background: var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    color: var(--white); font-family:inherit; font-size:14px; padding:12px 14px; resize:none;
+    outline:none; transition: border-color .25s ease, box-shadow .25s ease;
+  }
+  .source-inner textarea{ min-height:80px; line-height:1.5; }
+  .source-inner textarea:focus, .source-inner input[type=text]:focus{
+    border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-dim);
+  }
+  .source-row-actions{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .source-hint{ font-size:12px; color: var(--gray); }
+  .btn-small{
+    border:none; background: var(--amber); color:#000; font-family:inherit; font-weight:700;
+    font-size:13px; padding: 9px 18px; border-radius:999px; cursor:pointer;
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, opacity .2s ease;
+  }
+  .btn-small:hover{ transform: translateY(-1px) scale(1.02); box-shadow: 0 6px 18px var(--amber-dim); }
+  .btn-small:active{ transform: scale(.96); }
+  .btn-small:disabled{ opacity:.5; cursor:default; transform:none; box-shadow:none; }
+
+  /* stat bar */
+  .stat-bar{
+    display:flex; align-items:center; gap: 40px;
+    opacity:0; transform: translateY(-6px);
+    animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .12s forwards;
+  }
+  .stat{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .stat-value{
+    font-size: 26px; font-weight:800; color: var(--amber);
+    font-variant-numeric: tabular-nums; letter-spacing:-0.02em;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .stat-value.bump{ transform: scale(1.18); }
+  .stat-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color: var(--gray); font-weight:600; }
+
+  /* typing area */
+  .type-card{
+    width:100%;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 30px 32px;
+    box-shadow: 0 20px 60px -30px rgba(0,0,0,.7);
+    opacity:0;
+    animation: fadeUp .7s cubic-bezier(.16,1,.3,1) .18s forwards;
+  }
+
+  .words{
+    font-size: 28px; line-height: 1.75; font-weight:500; letter-spacing: 0.2px;
+    color: var(--gray);
+    transition: filter .4s ease, opacity .4s ease;
+    max-height: 160px; overflow:hidden; padding: 4px 2px; cursor: text;
+  }
+  .words.blurred{ filter: blur(5px); opacity:.5; }
+
+  .word{ display:inline-block; margin: 0 12px 6px 0; position:relative; }
+  .letter{ display:inline-block; transition: color .12s ease, transform .18s cubic-bezier(.34,1.56,.64,1); position:relative; }
+  .letter.correct{ color: var(--white); }
+  .letter.incorrect{ color: var(--error); }
+  .letter.typed-in{ animation: pop .22s cubic-bezier(.34,1.56,.64,1); }
+  .word.extra .letter{ color: var(--error); opacity:.65; }
+
+  .caret{
+    display:inline-block; width:2px; height: 28px; background: var(--amber);
+    margin-left:-1px; vertical-align: middle; position:relative; top: 6px; border-radius:2px;
+    box-shadow: 0 0 10px var(--amber);
+    animation: blink 1s step-end infinite;
+  }
+
+  .hidden-input{ position:absolute; opacity:0; pointer-events:none; height:0; width:0; }
+
+  .focus-hint{
+    text-align:center; color: var(--gray); font-size:13.5px; font-weight:500;
+    opacity:0; height:0; transition: opacity .3s ease; margin-top:0;
+  }
+  .type-card.unfocused .focus-hint{ opacity:1; height:auto; margin-top:14px; }
+
+  /* results */
+  .results{
+    width:100%; display:none; flex-direction:column; align-items:center; gap: 26px;
+    opacity:0; transform: translateY(14px);
+  }
+  .results.show{ display:flex; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) forwards; }
+  .results-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width:100%; }
+  .result-card{
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px 18px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;
+    opacity:0; transform: translateY(10px);
+    animation: fadeUp .5s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  .result-card:nth-child(1){ animation-delay:.05s; }
+  .result-card:nth-child(2){ animation-delay:.12s; }
+  .result-card:nth-child(3){ animation-delay:.19s; }
+  .result-card:nth-child(4){ animation-delay:.26s; }
+  .result-card .rv{ font-size: 34px; font-weight:800; color: var(--amber); letter-spacing:-0.02em; }
+  .result-card .rl{ font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color: var(--gray); font-weight:600; }
+
+  .btn-primary{
+    border:none; background: var(--amber); color:#000; font-family:inherit; cursor:pointer;
+    border-radius: 999px; font-weight:700; font-size:14px; padding: 13px 30px;
+    box-shadow: 0 4px 20px var(--amber-dim);
+    transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 28px var(--amber-dim); }
+  .btn-primary:active{ transform: translateY(0) scale(.97); }
+
+  .restart-hint{ color: var(--gray); font-size:12.5px; display:flex; align-items:center; gap:8px; }
+  kbd{ background: var(--panel); border:1px solid var(--border); border-radius:6px; padding:2px 7px; font-size:11px; font-family: inherit; color: var(--gray-light); }
+
+  .feature-row{
+    display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:center;
+    color: var(--gray); font-size:12.5px; font-weight:500;
+    opacity:0; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .35s forwards;
+  }
+  .feature-row span{ display:flex; align-items:center; gap:6px; }
+  .feature-row .dot{ width:5px; height:5px; border-radius:50%; background: var(--amber); }
+
+  footer{ text-align:center; padding: 20px; color: var(--gray); font-size:12px; opacity:0; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .3s forwards; }
+  footer span{ color: var(--amber); }
+
+  @keyframes fadeDown{ from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes pop{ 0%{ transform: scale(1.5); } 100%{ transform: scale(1); } }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0;} }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  @media (max-width: 640px){
+    header{ padding: 16px 18px; }
+    .logo{ font-size:16px; }
+    .pill-btn{ padding:6px 11px; font-size:12px; }
+    .type-card{ padding:20px 18px; }
+    .words{ font-size:20px; line-height:1.7; max-height: 200px; }
+    .stat-bar{ gap:24px; }
+    .stat-value{ font-size:20px; }
+    .results-grid{ grid-template-columns: repeat(2,1fr); }
+    .feature-row{ gap:12px; font-size:11.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-dot"></span>EliteStocks<span class="accent"> Typer</span></div>
+</header>
+
+<main>
+  <div class="stage">
+
+    <div class="controls" id="controls">
+      <div class="controls-row">
+        <div class="pill-group" id="sourcePill">
+          <button class="pill-btn active" data-source="random">Random</button>
+          <button class="pill-btn" data-source="custom">Custom text</button>
+        </div>
+        <div class="pill-group" id="timePill">
+          <button class="pill-btn" data-time="15">15s</button>
+          <button class="pill-btn active" data-time="30">30s</button>
+          <button class="pill-btn" data-time="60">60s</button>
+          <button class="pill-btn" data-time="120">120s</button>
+        </div>
+      </div>
+
+      <div class="source-panel" id="customPanel">
+        <div class="source-inner">
+          <textarea id="customText" placeholder="Paste any text here to type it out..."></textarea>
+          <div class="source-row-actions">
+            <div class="source-hint">Your own words, your own pace.</div>
+            <button class="btn-small" id="customLoadBtn">Use this text</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-bar" id="statBar">
+      <div class="stat"><div class="stat-value" id="statTime">30</div><div class="stat-label" id="statTimeLabel">Time</div></div>
+      <div class="stat"><div class="stat-value" id="statWpm">0</div><div class="stat-label">WPM</div></div>
+      <div class="stat"><div class="stat-value" id="statAcc">100%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+
+    <div class="type-card unfocused" id="typeCard">
+      <div class="words" id="words" tabindex="0"></div>
+      <input class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="focus-hint">Click here or press any key to start typing</div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-grid">
+        <div class="result-card"><div class="rv" id="rWpm">0</div><div class="rl">WPM</div></div>
+        <div class="result-card"><div class="rv" id="rAcc">0%</div><div class="rl">Accuracy</div></div>
+        <div class="result-card"><div class="rv" id="rChars">0</div><div class="rl">Characters</div></div>
+        <div class="result-card"><div class="rv" id="rTime">0s</div><div class="rl">Time</div></div>
+      </div>
+      <button class="btn-primary" id="restartBtn">Try Again</button>
+    </div>
+
+    <div class="restart-hint" id="restartHint"><kbd>tab</kbd> — restart test</div>
+
+    <div class="feature-row">
+      <span><span class="dot"></span>Live WPM</span>
+      <span><span class="dot"></span>Custom text mode</span>
+      <span><span class="dot"></span>No sign-up needed</span>
+    </div>
+
+  </div>
+</main>
+
+<footer>Built for <span>EliteStocks</span> — clean, fast, minimal.</footer>
+
+<script>
+(function(){
+  const WORD_BANK = ("the of and to in a is you that it he was for on are as with his they at be this from I have "+
+  "not or by one had word but what some we can out other were all there when up use your how said an each she which "+
+  "do their time if will way about many then them write would like so these her long make thing see him two has look "+
+  "more day could go come did number sound no most people my over know water than call first who may down side been "+
+  "now find any new work part take get place made live where after back little only round man year came show every "+
+  "good me give our under name very through just form sentence great think say help low line differ turn cause much "+
+  "mean before move right boy old too same tell does set three want air well also play small end put home read hand "+
+  "port large spell add even land here must big high such follow act why ask men change went light kind off need house "+
+  "picture try us again animal point mother world near build self earth father head stand own page should country found "+
+  "answer school grow study still learn plant cover food sun four between state keep eye never last let thought city "+
+  "tree cross farm hard start might story saw far sea draw left late run don while press close night real life few north "+
+  "open seem together next white children begin got walk example ease paper group always music those both mark often "+
+  "letter until mile river car feet care second book carry took science eat room friend began idea fish mountain stop "+
+  "once base hear horse cut sure watch color face wood main enough plain girl usual young ready above ever red list though "+
+  "feel talk bird soon body dog family direct pose leave song measure").split(" ");
+
+  const els = {
+    words: document.getElementById('words'),
+    typeCard: document.getElementById('typeCard'),
+    hiddenInput: document.getElementById('hiddenInput'),
+    statTime: document.getElementById('statTime'),
+    statTimeLabel: document.getElementById('statTimeLabel'),
+    statWpm: document.getElementById('statWpm'),
+    statAcc: document.getElementById('statAcc'),
+    results: document.getElementById('results'),
+    statBar: document.getElementById('statBar'),
+    restartBtn: document.getElementById('restartBtn'),
+    restartHint: document.getElementById('restartHint'),
+    timePill: document.getElementById('timePill'),
+    sourcePill: document.getElementById('sourcePill'),
+    customPanel: document.getElementById('customPanel'),
+    customText: document.getElementById('customText'),
+    customLoadBtn: document.getElementById('customLoadBtn'),
+    rWpm: document.getElementById('rWpm'),
+    rAcc: document.getElementById('rAcc'),
+    rChars: document.getElementById('rChars'),
+    rTime: document.getElementById('rTime'),
+    controls: document.getElementById('controls'),
+  };
+
+  let state = freshState();
+
+  function freshState(){
+    return {
+      source: 'random',        // 'random' | 'custom'
+      mode: 'timed',           // 'timed' | 'fixed'
+      duration: 30,
+      timeLeft: 30,
+      elapsed: 0,
+      wordList: [],
+      typed: [],
+      scored: [],
+      wordStats: [],
+      spaceCounted: [],
+      currentIndex: 0,
+      started: false,
+      finished: false,
+      timer: null,
+      startTime: null,
+      correctChars: 0,
+      incorrectChars: 0,
+    };
+  }
+
+  function randWords(n){
+    const arr = [];
+    for(let i=0;i<n;i++){ arr.push(WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)]); }
+    return arr;
+  }
+
+  function tokenizeText(text){
+    return text
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(w => w.length > 0)
+      .slice(0, 400);
+  }
+
+  function buildWordsForSource(){
+    if(state.source === 'random'){
+      state.mode = 'timed';
+      state.wordList = randWords(200);
+    }
+    // custom source handled by its load function
+    state.typed = state.wordList.map(()=> "");
+    state.scored = state.wordList.map(()=> false);
+    state.wordStats = state.wordList.map(()=> null);
+    state.spaceCounted = state.wordList.map(()=> false);
+    renderWords();
+  }
+
+  function renderWords(){
+    els.words.innerHTML = "";
+    state.wordList.forEach((word, wi)=>{
+      const wSpan = document.createElement('span');
+      wSpan.className = 'word';
+      if(wi === state.currentIndex) wSpan.classList.add('current');
+
+      const typedStr = state.typed[wi] || "";
+      const maxLen = Math.max(word.length, typedStr.length);
+
+      for(let i=0;i<maxLen;i++){
+        const lSpan = document.createElement('span');
+        lSpan.className = 'letter';
+        const targetChar = word[i];
+        const typedChar = typedStr[i];
+        if(targetChar === undefined){
+          lSpan.textContent = typedChar;
+          lSpan.classList.add('incorrect');
+        } else {
+          lSpan.textContent = targetChar;
+          if(typedChar !== undefined){
+            lSpan.classList.add(typedChar === targetChar ? 'correct' : 'incorrect');
+          }
+        }
+        wSpan.appendChild(lSpan);
+      }
+      if(typedStr.length > word.length) wSpan.classList.add('extra');
+
+      if(wi === state.currentIndex){
+        const caret = document.createElement('span');
+        caret.className = 'caret';
+        const pos = typedStr.length;
+        const children = wSpan.querySelectorAll('.letter');
+        if(children[pos]) wSpan.insertBefore(caret, children[pos]);
+        else wSpan.appendChild(caret);
+      }
+
+      els.words.appendChild(wSpan);
+    });
+    scrollToCurrentWord();
+  }
+
+  function scrollToCurrentWord(){
+    const cur = els.words.querySelector('.word.current');
+    if(!cur) return;
+    const wrapRect = els.words.getBoundingClientRect();
+    const curRect = cur.getBoundingClientRect();
+    if(curRect.top - wrapRect.top > 70){
+      els.words.scrollTop += (curRect.top - wrapRect.top) - 20;
+    } else if(curRect.top - wrapRect.top < 0){
+      els.words.scrollTop += (curRect.top - wrapRect.top);
+    }
+  }
+
+  function startTest(){
+    if(state.started || state.finished) return;
+    state.started = true;
+    state.startTime = Date.now();
+    state.timer = setInterval(tick, 1000);
+  }
+
+  function tick(){
+    state.elapsed += 1;
+    if(state.mode === 'timed'){
+      state.timeLeft -= 1;
+      els.statTime.textContent = state.timeLeft;
+      if(state.timeLeft <= 0){ finishTest(); }
+    } else {
+      els.statTime.textContent = state.elapsed;
+    }
+    bump(els.statTime);
+    updateLiveStats();
+  }
+
+  function bump(el){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+
+  function updateLiveStats(){
+    const elapsedMin = state.mode === 'timed'
+      ? (state.duration - state.timeLeft) / 60
+      : state.elapsed / 60;
+    if(elapsedMin > 0){
+      const wpm = Math.round((state.correctChars / 5) / elapsedMin);
+      els.statWpm.textContent = Math.max(0, wpm);
+    }
+    const totalAttempted = state.correctChars + state.incorrectChars;
+    const acc = totalAttempted > 0 ? Math.round((state.correctChars/totalAttempted)*100) : 100;
+    els.statAcc.textContent = acc + "%";
+  }
+
+  function scoreWord(index){
+    if(state.scored[index]) return;
+    state.scored[index] = true;
+    const target = state.wordList[index];
+    const typed = state.typed[index];
+    const len = Math.max(target.length, typed.length);
+    let correct = 0, incorrect = 0;
+    for(let i=0;i<len;i++){
+      if(target[i] === typed[i]) correct++;
+      else incorrect++;
+    }
+    state.wordStats[index] = { correct, incorrect };
+    state.correctChars += correct;
+    state.incorrectChars += incorrect;
+  }
+
+  function unscoreWord(index){
+    if(!state.scored[index]) return;
+    const stats = state.wordStats[index] || { correct: 0, incorrect: 0 };
+    state.correctChars -= stats.correct;
+    state.incorrectChars -= stats.incorrect;
+    if(state.spaceCounted[index]){
+      state.correctChars -= 1;
+      state.spaceCounted[index] = false;
+    }
+    state.scored[index] = false;
+    state.wordStats[index] = null;
+  }
+
+  function finishTest(){
+    if(state.finished) return;
+    state.finished = true;
+    clearInterval(state.timer);
+    els.hiddenInput.blur();
+
+    const elapsedSeconds = state.mode === 'timed' ? state.duration : Math.max(1, state.elapsed);
+    const elapsedMin = elapsedSeconds / 60;
+    const wpm = Math.round((state.correctChars/5) / elapsedMin) || 0;
+    const totalAttempted = state.correctChars + state.incorrectChars;
+    const acc = totalAttempted > 0 ? Math.round((state.correctChars/totalAttempted)*100) : 100;
+
+    els.rWpm.textContent = wpm;
+    els.rAcc.textContent = acc + "%";
+    els.rChars.textContent = state.correctChars + state.incorrectChars;
+    els.rTime.textContent = elapsedSeconds + "s";
+
+    els.typeCard.style.transition = "opacity .4s ease, transform .4s ease";
+    els.typeCard.style.opacity = "0";
+    els.typeCard.style.transform = "translateY(-10px)";
+    els.statBar.style.transition = "opacity .4s ease";
+    els.statBar.style.opacity = "0";
+    els.restartHint.style.transition = "opacity .4s ease";
+    els.restartHint.style.opacity = "0";
+    els.controls.style.transition = "opacity .4s ease";
+    els.controls.style.opacity = "0.35";
+    els.controls.style.pointerEvents = "none";
+
+    setTimeout(()=>{
+      els.typeCard.style.display = "none";
+      els.results.classList.add('show');
+    }, 300);
+  }
+
+  function resetTest(keepSource){
+    clearInterval(state.timer);
+    const prevSource = state.source;
+    const prevDuration = state.duration;
+    const prevWordList = state.wordList;
+    const prevMode = state.mode;
+    state = freshState();
+    state.source = keepSource ? prevSource : prevSource;
+    state.duration = prevDuration;
+    state.timeLeft = prevDuration;
+    state.mode = prevMode;
+
+    if(state.source === 'random'){
+      buildWordsForSource();
+    } else {
+      state.wordList = prevWordList;
+      state.typed = state.wordList.map(()=> "");
+      state.scored = state.wordList.map(()=> false);
+      state.wordStats = state.wordList.map(()=> null);
+      state.spaceCounted = state.wordList.map(()=> false);
+      renderWords();
+    }
+
+    els.statTimeLabel.textContent = state.mode === 'timed' ? 'Time' : 'Elapsed';
+    els.statTime.textContent = state.mode === 'timed' ? state.duration : 0;
+    els.statWpm.textContent = "0";
+    els.statAcc.textContent = "100%";
+
+    els.results.classList.remove('show');
+    els.typeCard.style.display = "";
+    els.controls.style.opacity = "1";
+    els.controls.style.pointerEvents = "";
+    els.words.scrollTop = 0;
+
+    requestAnimationFrame(()=>{
+      els.typeCard.style.opacity = "0";
+      els.typeCard.style.transform = "translateY(14px)";
+      requestAnimationFrame(()=>{
+        els.typeCard.style.transition = "opacity .5s cubic-bezier(.16,1,.3,1), transform .5s cubic-bezier(.16,1,.3,1)";
+        els.typeCard.style.opacity = "1";
+        els.typeCard.style.transform = "translateY(0)";
+      });
+    });
+    els.statBar.style.opacity = "1";
+    els.restartHint.style.opacity = "1";
+    els.hiddenInput.value = "";
+    els.hiddenInput.focus();
+  }
+
+  function handleKeydown(e){
+    if(e.key === "Tab"){ e.preventDefault(); resetTest(true); return; }
+    if(state.finished) return;
+
+    if(e.key === "Backspace"){
+      e.preventDefault();
+      const cur = state.typed[state.currentIndex];
+      if(cur.length > 0){
+        state.typed[state.currentIndex] = cur.slice(0, -1);
+        renderWords();
+      } else if(state.currentIndex > 0){
+        const prevIndex = state.currentIndex - 1;
+        unscoreWord(prevIndex);
+        state.currentIndex = prevIndex;
+        renderWords();
+        updateLiveStats();
+      }
+      return;
+    }
+
+    if(e.key === " "){
+      e.preventDefault();
+      if(state.typed[state.currentIndex].length === 0) return;
+      if(!state.started) startTest();
+
+      scoreWord(state.currentIndex);
+      state.spaceCounted[state.currentIndex] = true;
+      state.correctChars++; // count the space itself
+
+      const isLastWord = state.currentIndex === state.wordList.length - 1;
+      state.currentIndex++;
+
+      if(state.source === 'random' && state.currentIndex >= state.wordList.length - 15){
+        const more = randWords(100);
+        state.wordList = state.wordList.concat(more);
+        state.typed = state.typed.concat(more.map(()=> ""));
+        state.scored = state.scored.concat(more.map(()=> false));
+      }
+
+      renderWords();
+      updateLiveStats();
+
+      if(state.mode === 'fixed' && isLastWord){ finishTest(); }
+      return;
+    }
+
+    if(e.key.length === 1){
+      e.preventDefault();
+      if(!state.started) startTest();
+      state.typed[state.currentIndex] += e.key;
+      renderWords();
+      const wEl = els.words.querySelector('.word.current');
+      if(wEl){
+        const letters = wEl.querySelectorAll('.letter');
+        const last = letters[state.typed[state.currentIndex].length - 1];
+        if(last) last.classList.add('typed-in');
+      }
+      updateLiveStats();
+
+      // fixed-mode auto-finish once the last word is fully typed (no trailing space needed)
+      if(state.mode === 'fixed' && state.currentIndex === state.wordList.length - 1){
+        const target = state.wordList[state.currentIndex];
+        if(state.typed[state.currentIndex].length >= target.length){
+          scoreWord(state.currentIndex);
+          finishTest();
+        }
+      }
+    }
+  }
+
+  // ---------- focus handling ----------
+  els.words.addEventListener('click', ()=> els.hiddenInput.focus());
+  els.typeCard.addEventListener('click', ()=> els.hiddenInput.focus());
+  els.hiddenInput.addEventListener('focus', ()=> els.typeCard.classList.remove('unfocused'));
+  els.hiddenInput.addEventListener('blur', ()=>{ if(!state.finished) els.typeCard.classList.add('unfocused'); });
+  els.hiddenInput.addEventListener('keydown', handleKeydown);
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === "Tab"){ e.preventDefault(); resetTest(true); return; }
+    const typing = document.activeElement === els.customText;
+    if(!typing && document.activeElement !== els.hiddenInput && !state.finished){
+      els.hiddenInput.focus();
+    }
+  });
+
+  els.restartBtn.addEventListener('click', ()=> resetTest(true));
+
+  // ---------- time pill ----------
+  els.timePill.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.pill-btn');
+    if(!btn) return;
+    [...els.timePill.children].forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.duration = parseInt(btn.dataset.time, 10);
+    state.mode = 'timed';
+    resetTest(true);
+  });
+
+  // ---------- source pill ----------
+  els.sourcePill.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.pill-btn');
+    if(!btn) return;
+    const source = btn.dataset.source;
+    [...els.sourcePill.children].forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+
+    els.customPanel.classList.toggle('open', source === 'custom');
+    els.timePill.style.display = source === 'random' ? '' : 'none';
+
+    state.source = source;
+    if(source === 'random'){
+      state.mode = 'timed';
+      state.duration = parseInt(els.timePill.querySelector('.active').dataset.time, 10);
+      state.timeLeft = state.duration;
+      buildWordsForSource();
+      els.statTimeLabel.textContent = 'Time';
+      els.statTime.textContent = state.duration;
+    } else {
+      // wait for user to load text — keep current words visible but idle
+    }
+  });
+
+  els.customLoadBtn.addEventListener('click', ()=>{
+    const text = els.customText.value.trim();
+    if(!text){ els.customText.focus(); return; }
+    const words = tokenizeText(text);
+    if(words.length === 0) return;
+    state.mode = 'fixed';
+    state.wordList = words;
+    resetTest(true);
+    els.hiddenInput.focus();
+  });
+
+  // init
+  buildWordsForSource();
+  els.statTime.textContent = state.duration;
+  els.hiddenInput.focus();
+})();
+</script>
+
+</body>
+</html>
