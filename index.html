@@ -56,6 +56,7 @@
     border-bottom: 1px solid var(--border);
     opacity:0;
     animation: fadeDown .6s cubic-bezier(.16,1,.3,1) forwards;
+    transition: opacity .5s ease, filter .5s ease;
   }
   .logo{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; letter-spacing:-0.02em; }
   .logo-dot{
@@ -64,6 +65,14 @@
     animation: pulse 2.4s ease-in-out infinite;
   }
   .logo span.accent{ color: var(--amber); }
+
+  /* distraction-free typing: hide the mode controls (no blur, just a clean fade) */
+  body.is-typing .controls,
+  body.is-typing .feature-row{
+    opacity:0;
+    pointer-events:none;
+    transform: translateY(-6px);
+  }
 
   .pill-group{ display:flex; background: var(--panel); border:1px solid var(--border); border-radius: 999px; padding: 4px; gap:2px; }
   .pill-btn{
@@ -84,6 +93,7 @@
     display:flex; flex-direction:column; align-items:center; gap:16px; width:100%;
     opacity:0; transform: translateY(-6px);
     animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .05s forwards;
+    transition: opacity .5s ease, filter .5s ease;
   }
   .controls-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
 
@@ -119,20 +129,16 @@
   .btn-small:active{ transform: scale(.96); }
   .btn-small:disabled{ opacity:.5; cursor:default; transform:none; box-shadow:none; }
 
-  /* stat bar */
-  .stat-bar{
-    display:flex; align-items:center; gap: 40px;
-    opacity:0; transform: translateY(-6px);
-    animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .12s forwards;
-  }
-  .stat{ display:flex; flex-direction:column; align-items:center; gap:2px; }
-  .stat-value{
-    font-size: 26px; font-weight:800; color: var(--amber);
+  /* live counter — shown only while actively typing, monkeytype-style */
+  .live-counter{
+    font-size: 34px; font-weight:800; color: var(--amber);
     font-variant-numeric: tabular-nums; letter-spacing:-0.02em;
-    transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+    text-align:center;
+    opacity:0; height:0; overflow:hidden;
+    transition: opacity .3s ease, transform .25s cubic-bezier(.34,1.56,.64,1);
   }
-  .stat-value.bump{ transform: scale(1.18); }
-  .stat-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color: var(--gray); font-weight:600; }
+  .live-counter.show{ opacity:1; height:auto; margin-bottom:2px; }
+  .live-counter.bump{ transform: scale(1.15); }
 
   /* typing area */
   .type-card{
@@ -170,12 +176,6 @@
 
   .hidden-input{ position:absolute; opacity:0; pointer-events:none; height:0; width:0; }
 
-  .focus-hint{
-    text-align:center; color: var(--gray); font-size:13.5px; font-weight:500;
-    opacity:0; height:0; transition: opacity .3s ease; margin-top:0;
-  }
-  .type-card.unfocused .focus-hint{ opacity:1; height:auto; margin-top:14px; }
-
   /* results */
   .results{
     width:100%; display:none; flex-direction:column; align-items:center; gap: 26px;
@@ -205,18 +205,19 @@
   .btn-primary:hover{ transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 28px var(--amber-dim); }
   .btn-primary:active{ transform: translateY(0) scale(.97); }
 
-  .restart-hint{ color: var(--gray); font-size:12.5px; display:flex; align-items:center; gap:8px; }
+  .restart-hint{ color: var(--gray); font-size:12.5px; display:flex; align-items:center; gap:8px; transition: opacity .5s ease, filter .5s ease; }
   kbd{ background: var(--panel); border:1px solid var(--border); border-radius:6px; padding:2px 7px; font-size:11px; font-family: inherit; color: var(--gray-light); }
 
   .feature-row{
     display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:center;
     color: var(--gray); font-size:12.5px; font-weight:500;
     opacity:0; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .35s forwards;
+    transition: opacity .5s ease, filter .5s ease;
   }
   .feature-row span{ display:flex; align-items:center; gap:6px; }
   .feature-row .dot{ width:5px; height:5px; border-radius:50%; background: var(--amber); }
 
-  footer{ text-align:center; padding: 20px; color: var(--gray); font-size:12px; opacity:0; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .3s forwards; }
+  footer{ text-align:center; padding: 20px; color: var(--gray); font-size:12px; opacity:0; animation: fadeUp .6s cubic-bezier(.16,1,.3,1) .3s forwards; transition: opacity .5s ease, filter .5s ease; }
   footer span{ color: var(--amber); }
 
   @keyframes fadeDown{ from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
@@ -232,8 +233,7 @@
     .pill-btn{ padding:6px 11px; font-size:12px; }
     .type-card{ padding:20px 18px; }
     .words{ font-size:20px; line-height:1.7; max-height: 200px; }
-    .stat-bar{ gap:24px; }
-    .stat-value{ font-size:20px; }
+    .live-counter{ font-size:28px; }
     .results-grid{ grid-template-columns: repeat(2,1fr); }
     .feature-row{ gap:12px; font-size:11.5px; }
   }
@@ -273,16 +273,11 @@
       </div>
     </div>
 
-    <div class="stat-bar" id="statBar">
-      <div class="stat"><div class="stat-value" id="statTime">30</div><div class="stat-label" id="statTimeLabel">Time</div></div>
-      <div class="stat"><div class="stat-value" id="statWpm">0</div><div class="stat-label">WPM</div></div>
-      <div class="stat"><div class="stat-value" id="statAcc">100%</div><div class="stat-label">Accuracy</div></div>
-    </div>
+    <div class="live-counter" id="liveCounter">30</div>
 
-    <div class="type-card unfocused" id="typeCard">
+    <div class="type-card" id="typeCard">
       <div class="words" id="words" tabindex="0"></div>
       <input class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <div class="focus-hint">Click here or press any key to start typing</div>
     </div>
 
     <div class="results" id="results">
@@ -330,12 +325,8 @@
     words: document.getElementById('words'),
     typeCard: document.getElementById('typeCard'),
     hiddenInput: document.getElementById('hiddenInput'),
-    statTime: document.getElementById('statTime'),
-    statTimeLabel: document.getElementById('statTimeLabel'),
-    statWpm: document.getElementById('statWpm'),
-    statAcc: document.getElementById('statAcc'),
+    liveCounter: document.getElementById('liveCounter'),
     results: document.getElementById('results'),
-    statBar: document.getElementById('statBar'),
     restartBtn: document.getElementById('restartBtn'),
     restartHint: document.getElementById('restartHint'),
     timePill: document.getElementById('timePill'),
@@ -461,35 +452,23 @@
     state.started = true;
     state.startTime = Date.now();
     state.timer = setInterval(tick, 1000);
+    document.body.classList.add('is-typing');
+    els.liveCounter.classList.add('show');
   }
 
   function tick(){
     state.elapsed += 1;
     if(state.mode === 'timed'){
       state.timeLeft -= 1;
-      els.statTime.textContent = state.timeLeft;
+      els.liveCounter.textContent = state.timeLeft;
       if(state.timeLeft <= 0){ finishTest(); }
     } else {
-      els.statTime.textContent = state.elapsed;
+      els.liveCounter.textContent = state.elapsed;
     }
-    bump(els.statTime);
-    updateLiveStats();
+    bump(els.liveCounter);
   }
 
   function bump(el){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
-
-  function updateLiveStats(){
-    const elapsedMin = state.mode === 'timed'
-      ? (state.duration - state.timeLeft) / 60
-      : state.elapsed / 60;
-    if(elapsedMin > 0){
-      const wpm = Math.round((state.correctChars / 5) / elapsedMin);
-      els.statWpm.textContent = Math.max(0, wpm);
-    }
-    const totalAttempted = state.correctChars + state.incorrectChars;
-    const acc = totalAttempted > 0 ? Math.round((state.correctChars/totalAttempted)*100) : 100;
-    els.statAcc.textContent = acc + "%";
-  }
 
   function scoreWord(index){
     if(state.scored[index]) return;
@@ -525,6 +504,7 @@
     state.finished = true;
     clearInterval(state.timer);
     els.hiddenInput.blur();
+    document.body.classList.remove('is-typing');
 
     const elapsedSeconds = state.mode === 'timed' ? state.duration : Math.max(1, state.elapsed);
     const elapsedMin = elapsedSeconds / 60;
@@ -540,13 +520,7 @@
     els.typeCard.style.transition = "opacity .4s ease, transform .4s ease";
     els.typeCard.style.opacity = "0";
     els.typeCard.style.transform = "translateY(-10px)";
-    els.statBar.style.transition = "opacity .4s ease";
-    els.statBar.style.opacity = "0";
-    els.restartHint.style.transition = "opacity .4s ease";
-    els.restartHint.style.opacity = "0";
-    els.controls.style.transition = "opacity .4s ease";
-    els.controls.style.opacity = "0.35";
-    els.controls.style.pointerEvents = "none";
+    els.liveCounter.classList.remove('show');
 
     setTimeout(()=>{
       els.typeCard.style.display = "none";
@@ -556,6 +530,7 @@
 
   function resetTest(keepSource){
     clearInterval(state.timer);
+    document.body.classList.remove('is-typing');
     const prevSource = state.source;
     const prevDuration = state.duration;
     const prevWordList = state.wordList;
@@ -577,15 +552,11 @@
       renderWords();
     }
 
-    els.statTimeLabel.textContent = state.mode === 'timed' ? 'Time' : 'Elapsed';
-    els.statTime.textContent = state.mode === 'timed' ? state.duration : 0;
-    els.statWpm.textContent = "0";
-    els.statAcc.textContent = "100%";
+    els.liveCounter.classList.remove('show');
+    els.liveCounter.textContent = state.mode === 'timed' ? state.duration : 0;
 
     els.results.classList.remove('show');
     els.typeCard.style.display = "";
-    els.controls.style.opacity = "1";
-    els.controls.style.pointerEvents = "";
     els.words.scrollTop = 0;
 
     requestAnimationFrame(()=>{
@@ -597,13 +568,12 @@
         els.typeCard.style.transform = "translateY(0)";
       });
     });
-    els.statBar.style.opacity = "1";
-    els.restartHint.style.opacity = "1";
     els.hiddenInput.value = "";
     els.hiddenInput.focus();
   }
 
   function handleKeydown(e){
+    if(e.ctrlKey || e.metaKey || e.altKey) return; // never hijack browser shortcuts (Ctrl+R, Cmd+R, Ctrl+C, etc.)
     if(e.key === "Tab"){ e.preventDefault(); resetTest(true); return; }
     if(state.finished) return;
 
@@ -618,7 +588,6 @@
         unscoreWord(prevIndex);
         state.currentIndex = prevIndex;
         renderWords();
-        updateLiveStats();
       }
       return;
     }
@@ -643,7 +612,6 @@
       }
 
       renderWords();
-      updateLiveStats();
 
       if(state.mode === 'fixed' && isLastWord){ finishTest(); }
       return;
@@ -660,7 +628,6 @@
         const last = letters[state.typed[state.currentIndex].length - 1];
         if(last) last.classList.add('typed-in');
       }
-      updateLiveStats();
 
       // fixed-mode auto-finish once the last word is fully typed (no trailing space needed)
       if(state.mode === 'fixed' && state.currentIndex === state.wordList.length - 1){
@@ -676,11 +643,10 @@
   // ---------- focus handling ----------
   els.words.addEventListener('click', ()=> els.hiddenInput.focus());
   els.typeCard.addEventListener('click', ()=> els.hiddenInput.focus());
-  els.hiddenInput.addEventListener('focus', ()=> els.typeCard.classList.remove('unfocused'));
-  els.hiddenInput.addEventListener('blur', ()=>{ if(!state.finished) els.typeCard.classList.add('unfocused'); });
   els.hiddenInput.addEventListener('keydown', handleKeydown);
 
   document.addEventListener('keydown', (e)=>{
+    if(e.ctrlKey || e.metaKey || e.altKey) return; // never hijack browser shortcuts (Ctrl+R, Cmd+R, Ctrl+C, etc.)
     if(e.key === "Tab"){ e.preventDefault(); resetTest(true); return; }
     const typing = document.activeElement === els.customText;
     if(!typing && document.activeElement !== els.hiddenInput && !state.finished){
@@ -718,8 +684,7 @@
       state.duration = parseInt(els.timePill.querySelector('.active').dataset.time, 10);
       state.timeLeft = state.duration;
       buildWordsForSource();
-      els.statTimeLabel.textContent = 'Time';
-      els.statTime.textContent = state.duration;
+      els.liveCounter.textContent = state.duration;
     } else {
       // wait for user to load text — keep current words visible but idle
     }
@@ -738,7 +703,7 @@
 
   // init
   buildWordsForSource();
-  els.statTime.textContent = state.duration;
+  els.liveCounter.textContent = state.duration;
   els.hiddenInput.focus();
 })();
 </script>
