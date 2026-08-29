@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EliteStocks Typer</title>
+<link rel="icon" type="image/png" href="assets/elitestockstyper.png">
+<link rel="apple-touch-icon" href="assets/elitestockstyper.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -63,6 +65,10 @@
     width:9px;height:9px;border-radius:50%; background: var(--amber);
     box-shadow: 0 0 12px var(--amber);
     animation: pulse 2.4s ease-in-out infinite;
+  }
+  .logo-icon{
+    width:26px; height:26px; border-radius:7px; object-fit:cover;
+    box-shadow: 0 0 0 1px var(--border);
   }
   .logo span.accent{ color: var(--amber); }
 
@@ -242,7 +248,10 @@
 <body>
 
 <header>
-  <div class="logo"><span class="logo-dot"></span>EliteStocks<span class="accent"> Typer</span></div>
+  <div class="logo">
+    <img class="logo-icon" src="assets/elitestockstyper.png" alt="EliteStocks Typer" onerror="this.outerHTML='&lt;span class=&quot;logo-dot&quot;&gt;&lt;/span&gt;'">
+    EliteStocks<span class="accent"> Typer</span>
+  </div>
 </header>
 
 <main>
